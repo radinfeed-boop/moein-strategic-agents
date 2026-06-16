@@ -1,0 +1,39 @@
+name: CI/CD Professional Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest mypy pytest-cov
+      - name: Lint
+        run: ruff check .
+      - name: Type Check
+        run: mypy .
+      - name: Test
+        run: pytest --cov
+
+  security:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aquasecurity/trivy-action@master
+
+  build:
+    needs: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/build-push-action@v6
